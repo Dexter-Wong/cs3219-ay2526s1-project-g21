@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getFilteredRandomQuestion } from "@/services/questionService"
+import type { Question } from "@/types/question";
 import toast from "react-hot-toast";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 
-type Question = {
-  id: string;
-  title: string;
-  description: string;
-  difficulty?: "Easy" | "Medium" | "Hard";
-  tags?: string[];
-};
+// type Question = {
+//   id: string;
+//   title: string;
+//   description: string;
+//   difficulty?: "Easy" | "Medium" | "Hard";
+//   tags?: string[];
+// };
 
 type WSFrame =
   | { type: "init"; data: { sessionId: string; doc: { text: string; version: number }; language: string } }
@@ -82,18 +84,41 @@ export default function Editor() {
   };
 
   useEffect(() => {
-    // Placeholder: In the future, fetch the question based on room/session
-    // For now, hydrate with a sample prompt to validate layout and UX
-    const mock: Question = {
-      id: "sample-1",
-      title: "Two Sum",
-      description:
-        "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-      difficulty: "Easy",
-      tags: ["Array", "Hash Table"],
-    };
-    setQuestion(mock);
-  }, []);
+      let cancelled = false;
+
+      (async () => {
+        try {
+          // TODO: get real filters from UI/route
+          const q = await getFilteredRandomQuestion({
+            difficulty: "Easy",
+            topic_tags: ["Array"],    // e.g. from InterviewFieldSelector
+          });
+          if (!cancelled) setQuestion(q);
+        } catch (e) {
+          console.error(e);
+          if (!cancelled) {
+            toast.error("Failed to load question");
+            setQuestion(null);
+          }
+        }
+      })();
+
+      return () => { cancelled = true; };
+    }, []);
+
+  // useEffect(() => {
+  //   // Placeholder: In the future, fetch the question based on room/session
+  //   // For now, hydrate with a sample prompt to validate layout and UX
+  //   const mock: Question = {
+  //     id: "sample-1",
+  //     title: "Two Sum",
+  //     description:
+  //       "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+  //     difficulty: "Easy",
+  //     tags: ["Array", "Hash Table"],
+  //   };
+  //   setQuestion(mock);
+  // }, []);
 
   // WebSocket collab setup
   useEffect(() => {
@@ -283,11 +308,11 @@ export default function Editor() {
               )}
             </div>
             <p className="mt-3 text-sm leading-6 text-gray-700 whitespace-pre-wrap">
-              {question?.description}
+              {question?.prompt_markdown}
             </p>
-            {question?.tags?.length ? (
+            {question?.topic_tags?.length ? (
               <div className="mt-4 flex flex-wrap gap-2">
-                {question.tags.map((t) => (
+                {question.topic_tags.map((t) => (
                   <span key={t} className="text-xs rounded-md bg-gray-100 px-2 py-1 text-gray-600">
                     {t}
                   </span>

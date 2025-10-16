@@ -126,6 +126,12 @@ cd deploy
 docker compose up mongo-seed
 ```
 
+or
+
+```
+docker compose -f deploy/docker-compose.yaml up -d mongo && sleep 3 && docker compose -f deploy/docker-compose.yaml exec mongo mongosh peerprep --eval "db.questions.deleteMany({})" && docker compose -f deploy/docker-compose.yaml run --rm mongo-seed
+```
+
 Alternatively, see repo `deploy/docker-compose.yaml` for multi-service setup.
 
 ## Notes
